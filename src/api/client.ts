@@ -58,6 +58,7 @@ export async function request<T = any>(
         if (response.ok && response.status === 200) {
           body = { message: 'Success' };
         } else {
+          // eslint-disable-next-line no-throw-literal
           const error: ApiError = {
             status: response.status,
             message: 'Empty response from server',
@@ -70,6 +71,7 @@ export async function request<T = any>(
           body = JSON.parse(text);
         } catch (jsonError) {
           // Response is not valid JSON
+          // eslint-disable-next-line no-throw-literal
           const error: ApiError = {
             status: response.status,
             message: `Invalid response format: Server returned non-JSON data. Status: ${response.status}`,
@@ -84,6 +86,7 @@ export async function request<T = any>(
         throw apiError;
       }
       // Otherwise, it's a parsing error
+      // eslint-disable-next-line no-throw-literal
       const error: ApiError = {
         status: response.status || 500,
         message: `Failed to parse response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
@@ -92,6 +95,7 @@ export async function request<T = any>(
     }
 
     if (!response.ok) {
+      // eslint-disable-next-line no-throw-literal
       const error: ApiError = {
         status: response.status,
         message: body?.message || response.statusText || 'Request failed',
@@ -105,9 +109,11 @@ export async function request<T = any>(
     };
   } catch (error) {
     if (error && typeof error === 'object' && 'status' in error) {
+      // eslint-disable-next-line no-throw-literal
       const apiError: ApiError = error as ApiError;
       throw apiError;
     }
+    // eslint-disable-next-line no-throw-literal
     const networkError: ApiError = {
       status: 0,
       message: 'Network error',
