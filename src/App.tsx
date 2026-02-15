@@ -28,7 +28,7 @@ function App() {
   useEffect(() => {
     // Apply theme on mount
     document.documentElement.setAttribute('data-theme', theme);
-  }, []);
+  }, [theme]);
 
   useEffect(() => {
     const storedToken = getToken();

@@ -58,10 +58,11 @@ export async function request<T = any>(
         if (response.ok && response.status === 200) {
           body = { message: 'Success' };
         } else {
-          throw {
+          const error: ApiError = {
             status: response.status,
             message: 'Empty response from server',
-          } as ApiError;
+          };
+          throw error;
         }
       } else {
         // Try to parse as JSON
@@ -69,29 +70,33 @@ export async function request<T = any>(
           body = JSON.parse(text);
         } catch (jsonError) {
           // Response is not valid JSON
-          throw {
+          const error: ApiError = {
             status: response.status,
             message: `Invalid response format: Server returned non-JSON data. Status: ${response.status}`,
-          } as ApiError;
+          };
+          throw error;
         }
       }
     } catch (parseError) {
       // If it's already an ApiError, re-throw it
       if (parseError && typeof parseError === 'object' && 'status' in parseError) {
-        throw parseError as ApiError;
+        const apiError: ApiError = parseError as ApiError;
+        throw apiError;
       }
       // Otherwise, it's a parsing error
-      throw {
+      const error: ApiError = {
         status: response.status || 500,
         message: `Failed to parse response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
-      } as ApiError;
+      };
+      throw error;
     }
 
     if (!response.ok) {
-      throw {
+      const error: ApiError = {
         status: response.status,
         message: body?.message || response.statusText || 'Request failed',
-      } as ApiError;
+      };
+      throw error;
     }
 
     return {
@@ -100,11 +105,13 @@ export async function request<T = any>(
     };
   } catch (error) {
     if (error && typeof error === 'object' && 'status' in error) {
-      throw error as ApiError;
+      const apiError: ApiError = error as ApiError;
+      throw apiError;
     }
-    throw {
+    const networkError: ApiError = {
       status: 0,
       message: 'Network error',
-    } as ApiError;
+    };
+    throw networkError;
   }
 }

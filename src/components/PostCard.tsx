@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { getPostReplies, replyToPost, replyToReply, deleteReply, getPostAttachments, getUser, getProfile, getAsset, getAssetUrl } from '../api/endpoints';
-import { ApiError } from '../api/client';
 import ImageLightbox from './ImageLightbox';
 
 interface PostCardProps {
@@ -220,7 +219,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, currentUserId, onDelete, onUs
       const nestedRepliesMap: Record<string, any[]> = {};
       
       uniqueReplies.forEach((reply: any) => {
-        const replyId = String(reply.id || reply._id);
         const parentId = reply.parent_id || reply.parent_reply_id || reply.parentId;
         
         if (parentId) {

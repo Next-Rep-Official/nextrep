@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   getUser,
   getProfile,
@@ -47,11 +47,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUserId, onClos
   const [followLoading, setFollowLoading] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadUserProfile();
-  }, [userId]);
-
-  const loadUserProfile = async () => {
+  const loadUserProfile = useCallback(async () => {
     setLoading(true);
     setError('');
     const currentUserIdStr = currentUserId ? String(currentUserId) : null;
@@ -150,7 +146,11 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, currentUserId, onClos
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, currentUserId]);
+
+  useEffect(() => {
+    loadUserProfile();
+  }, [loadUserProfile]);
 
   const handleFollow = async () => {
     if (!currentUserId || followLoading) return;

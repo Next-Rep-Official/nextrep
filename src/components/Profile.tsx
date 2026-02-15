@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   getSelfProfile,
   getUser,
@@ -33,11 +33,7 @@ const Profile: React.FC<ProfileProps> = ({ onUpdate, currentUserId }) => {
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [userVisibility, setUserVisibility] = useState<'public' | 'private'>('private');
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     setLoading(true);
     setProfilePictureLoading(false);
     setProfilePictureUrl(null);
@@ -108,7 +104,11 @@ const Profile: React.FC<ProfileProps> = ({ onUpdate, currentUserId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUserId]);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
 
   const handleUpdateBio = async () => {
     try {
