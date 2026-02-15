@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '../config';
-import { getToken } from './auth';
+import { getToken, clearToken } from './auth';
 
 export interface ApiError {
   status: number;
@@ -25,20 +25,40 @@ export async function request<T = any>(
   options: RequestOptions = {}
 ): Promise<ApiResponse<T>> {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  const url = `${API_BASE_URL}${normalizedPath}`;
+  let url = `${API_BASE_URL}${normalizedPath}`;
 
   const headers: Record<string, string> = { ...options.headers };
 
   const token = getToken();
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+  } else {
+    // Add user_id: -1 to query params for GET requests when not logged in
+    if ((!options.method || options.method === 'GET') && !normalizedPath.includes('user_id=')) {
+      const separator = normalizedPath.includes('?') ? '&' : '?';
+      url = `${API_BASE_URL}${normalizedPath}${separator}user_id=-1`;
+    }
   }
 
   // For FormData, don't set Content-Type - browser will set it with boundary
+  // Also add user_id: -1 if not logged in
   if (options.body instanceof FormData) {
     delete headers['Content-Type'];
+    if (!token) {
+      options.body.append('user_id', '-1');
+    }
   } else if (options.body && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
+    // Add user_id: -1 to JSON body if not logged in
+    if (!token && typeof options.body === 'string') {
+      try {
+        const bodyObj = JSON.parse(options.body);
+        bodyObj.user_id = -1;
+        options.body = JSON.stringify(bodyObj);
+      } catch (e) {
+        // If parsing fails, keep original body
+      }
+    }
   }
 
   try {
@@ -95,6 +115,12 @@ export async function request<T = any>(
     }
 
     if (!response.ok) {
+      // Check for expired token (401 Unauthorized)
+      if (response.status === 401) {
+        clearToken();
+        // Redirect to login by dispatching a custom event
+        window.dispatchEvent(new CustomEvent('token-expired'));
+      }
       // eslint-disable-next-line no-throw-literal
       const error: ApiError = {
         status: response.status,

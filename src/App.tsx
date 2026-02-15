@@ -15,7 +15,7 @@ type View = 'login' | 'signup' | 'feed' | 'create' | 'profile' | 'users' | 'sett
 type Theme = 'green' | 'blue' | 'purple-orange';
 
 function App() {
-  const [view, setView] = useState<View>('login');
+  const [view, setView] = useState<View>('feed');
   const [token, setToken] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [refreshFeed, setRefreshFeed] = useState(0);
@@ -32,11 +32,20 @@ function App() {
 
   useEffect(() => {
     const storedToken = getToken();
+    setToken(storedToken);
     if (storedToken) {
-      setToken(storedToken);
       loadUserProfile();
-      setView('feed');
     }
+
+    // Listen for expired token events
+    const handleTokenExpired = () => {
+      handleExpiredToken();
+    };
+    window.addEventListener('token-expired', handleTokenExpired);
+
+    return () => {
+      window.removeEventListener('token-expired', handleTokenExpired);
+    };
   }, []);
 
   useEffect(() => {
@@ -70,6 +79,13 @@ function App() {
     clearToken();
     setToken(null);
     setCurrentUserId(null);
+    setView('feed');
+  };
+
+  const handleExpiredToken = () => {
+    clearToken();
+    setToken(null);
+    setCurrentUserId(null);
     setView('login');
   };
 
@@ -78,14 +94,30 @@ function App() {
     setView('feed');
   };
 
-  if (!token) {
+  // Redirect protected views to login if not authenticated
+  useEffect(() => {
+    if ((view === 'create' || view === 'profile') && !token) {
+      setView('login');
+    }
+  }, [view, token]);
+
+  // Show login/signup views
+  if (view === 'login' || view === 'signup') {
     return (
       <div className="App">
         <div className="animated-background"></div>
         {view === 'login' ? (
-          <Login onLogin={handleLogin} onSwitchToSignup={() => setView('signup')} />
+          <Login 
+            onLogin={handleLogin} 
+            onSwitchToSignup={() => setView('signup')}
+            onBack={() => setView('feed')}
+          />
         ) : (
-          <Signup onSignup={handleSignup} onSwitchToLogin={() => setView('login')} />
+          <Signup 
+            onSignup={handleSignup} 
+            onSwitchToLogin={() => setView('login')}
+            onBack={() => setView('feed')}
+          />
         )}
       </div>
     );
@@ -103,33 +135,47 @@ function App() {
           >
             Feed
           </button>
-          <button
-            onClick={() => setView('create')}
-            className={view === 'create' ? 'nav-link active' : 'nav-link'}
-          >
-            Create Post
-          </button>
+          {token && (
+            <button
+              onClick={() => setView('create')}
+              className={view === 'create' ? 'nav-link active' : 'nav-link'}
+            >
+              Create Post
+            </button>
+          )}
           <button
             onClick={() => setView('users')}
             className={view === 'users' ? 'nav-link active' : 'nav-link'}
           >
             Users
           </button>
-          <button
-            onClick={() => setView('profile')}
-            className={view === 'profile' ? 'nav-link active' : 'nav-link'}
-          >
-            Profile
-          </button>
-          <button
-            onClick={() => setView('settings')}
-            className={view === 'settings' ? 'nav-link active' : 'nav-link'}
-          >
-            Settings
-          </button>
-          <button onClick={handleLogout} className="nav-link logout">
-            Logout
-          </button>
+          {token && (
+            <>
+              <button
+                onClick={() => setView('profile')}
+                className={view === 'profile' ? 'nav-link active' : 'nav-link'}
+              >
+                Profile
+              </button>
+              <button
+                onClick={() => setView('settings')}
+                className={view === 'settings' ? 'nav-link active' : 'nav-link'}
+              >
+                Settings
+              </button>
+              <button onClick={handleLogout} className="nav-link logout">
+                Logout
+              </button>
+            </>
+          )}
+          {!token && (
+            <button
+              onClick={() => setView('login')}
+              className="nav-link"
+            >
+              Login
+            </button>
+          )}
         </div>
       </nav>
 
@@ -141,14 +187,14 @@ function App() {
             onUserClick={(userId) => setViewingUserId(userId)}
           />
         )}
-        {view === 'create' && <CreatePost onPostCreated={handlePostCreated} />}
+        {view === 'create' && token && <CreatePost onPostCreated={handlePostCreated} />}
         {view === 'users' && (
           <Users
             currentUserId={currentUserId || undefined}
             onUserClick={(userId) => setViewingUserId(userId)}
           />
         )}
-        {view === 'profile' && <Profile onUpdate={loadUserProfile} currentUserId={currentUserId || undefined} />}
+        {view === 'profile' && token && <Profile onUpdate={loadUserProfile} currentUserId={currentUserId || undefined} />}
         {view === 'settings' && (
           <Settings
             currentTheme={theme}

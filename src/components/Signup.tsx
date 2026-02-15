@@ -6,9 +6,10 @@ import { ApiError } from '../api/client';
 interface SignupProps {
   onSignup: () => void;
   onSwitchToLogin: () => void;
+  onBack?: () => void;
 }
 
-const Signup: React.FC<SignupProps> = ({ onSignup, onSwitchToLogin }) => {
+const Signup: React.FC<SignupProps> = ({ onSignup, onSwitchToLogin, onBack }) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,6 +38,16 @@ const Signup: React.FC<SignupProps> = ({ onSignup, onSwitchToLogin }) => {
   return (
     <div className="auth-container">
       <div className="auth-card">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="auth-back-button"
+            aria-label="Go back"
+          >
+            ← Back
+          </button>
+        )}
         <h1>Nextrep</h1>
         <h2>Create your account</h2>
         <form onSubmit={handleSubmit}>
